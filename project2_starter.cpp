@@ -1,4 +1,3 @@
-
 // =============================================================================
 // Names: 
 //      Noemi Pantoja Morales
@@ -21,210 +20,148 @@
 #include <vector>
 using namespace std;
 
-// convert "hh:mm" to minutes
+// Convert "hh:mm" to minutes
 int toMinutes(string time) {
-    // "H:MM"
-    if (time.size() == 4) {
-        return (stoi(time.substr(0, 1)) * 60 + stoi(time.substr(2, 2)));
+    if (time.size() == 4) { // "H:MM"
+        return stoi(time.substr(0, 1)) * 60 + stoi(time.substr(2, 2));
     }
-    // "HH:MM"
-    else {
-        return (stoi(time.substr(0, 2)) * 60 + stoi(time.substr(3, 2)));
+    else { // "HH:MM"
+        return stoi(time.substr(0, 2)) * 60 + stoi(time.substr(3, 2));
     }
 }
 
-// print a schedule
-void printSched(vector<pair<string, string>> sched) {
-    for (int i = 0; i < sched.size(); i++) {
-        cout << sched[i].first << " " << sched[i].second << endl;;
+// Print a schedule to an output file
+void printSched(const vector<pair<string, string>>& sched, ofstream& outFile) {
+        outFile << "Availability: \n";
+    for (const auto& period : sched) {
+        outFile << period.first << " " << period.second << endl;
     }
+    outFile << endl; // Separate test cases with a blank line
 }
 
-// function to combine two schedules
-// assume both schedules are already sorted within themselves
-vector<pair<string, string>> combineSchedules(vector<pair<string, string>> p1sched,
-    vector<pair<string, string>> p2sched) {
-    // iterators through the two schedules
-    int i = 0;
-    int j = 0;
+// Function to combine two schedules
+vector<pair<string, string>> combineSchedules(const vector<pair<string, string>>& p1sched,
+    const vector<pair<string, string>>& p2sched) {
+    size_t i = 0, j = 0;
+    vector<pair<string, string>> combined, merged;
 
-    // combined and merged schedules
-    // combine and sort both schedules then merge any overlaps
-    vector<pair<string, string>> combined;
-    vector<pair<string, string>> merged;
-
-    // add all in order
-    while ((i < p1sched.size()) && (j < p2sched.size())) {
-        // if the start of the first schedule is earlier than the start of the second, 
-        // push the first schedule
+    // Combine the schedules in sorted order
+    while (i < p1sched.size() && j < p2sched.size()) {
         if (toMinutes(p1sched[i].first) < toMinutes(p2sched[j].first)) {
-            combined.push_back(p1sched[i]);
-            i++;
-        }
-
-        // otherwise
-        else {
-            // if they're the same start
-            if (toMinutes(p1sched[i].first) == toMinutes(p2sched[j].first)) {
-                // push the schedule with an earlier end
-                if (toMinutes(p1sched[i].second) <
-                    toMinutes(p2sched[j].second)) {
-                    combined.push_back(p1sched[i]);
-                    i++;
-                }
-                else {
-                    combined.push_back(p2sched[j]);
-                    j++;
-                }
-            }
-            // otherwise push the second schedule
-            else {
-                combined.push_back(p2sched[j]);
-                j++;
-            }
+            combined.push_back(p1sched[i++]);
+        } else if (toMinutes(p1sched[i].first) == toMinutes(p2sched[j].first)) {
+            combined.push_back(toMinutes(p1sched[i].second) < toMinutes(p2sched[j].second) ? p1sched[i++] : p2sched[j++]);
+        } else {
+            combined.push_back(p2sched[j++]);
         }
     }
 
-    // add the rest
-    while (i < p1sched.size()) {
-        combined.push_back(p1sched[i]);
-        i++;
-    }
-    while (j < p2sched.size()) {
-        combined.push_back(p2sched[j]);
-        j++;
-    }
+    // Add remaining entries
+    while (i < p1sched.size()) combined.push_back(p1sched[i++]);
+    while (j < p2sched.size()) combined.push_back(p2sched[j++]);
 
-    // reset iterators
-    i = 0;
-    j = 1;
-    pair<string, string> current = combined[i];
-
-    // merge overlapping schedules
-    while ((i < combined.size()) && (j < combined.size())) {
-        if ((toMinutes(current.first) <= toMinutes(combined[j].first)) &&
-            (toMinutes(current.second) >= toMinutes(combined[j].first))) {
-            current.second =
-                (toMinutes(combined[i].second) > toMinutes(combined[j].second) ?
-                    combined[i].second : combined[j].second);
-            j++;
-            if (j >= combined.size()) {
-                merged.push_back(current);
-            }
-        }
-        else {
+    // Merge overlapping schedules
+    pair<string, string> current = combined[0];
+    for (size_t k = 1; k < combined.size(); ++k) {
+        if (toMinutes(current.second) >= toMinutes(combined[k].first)) {
+            current.second = max(current.second, combined[k].second);
+        } else {
             merged.push_back(current);
-            i = j;
-            current = combined[i];
-            j++;
+            current = combined[k];
         }
     }
-    while (i < combined.size()) {
-        current = combined[i];
-        merged.push_back(current);
-        i++;
-    }
+    merged.push_back(current);
 
     return merged;
 }
 
-// the actual scheduling function
-vector<pair<string, string>> groupSchedule(vector<vector<pair<string,
-    string>>> schedules, vector<pair<string, string>> workingPeriods, int duration) {
-    // iterator
-    int i = 0;
+// Main scheduling function
+vector<pair<string, string>> groupSchedule(const vector<vector<pair<string, string>>>& schedules,
+    const vector<pair<string, string>>& workingPeriods, int duration) {
+    size_t i = 0;
+    vector<pair<string, string>> combinedSchedules = schedules[i++];
 
-    // initialize first schedule
-    vector<pair<string, string>> combinedSchedules = schedules[i];
-    i++;
-
-    // combine all schedules
     while (i < schedules.size()) {
-        combinedSchedules = combineSchedules(combinedSchedules, schedules[i]);
-        i++;
+        combinedSchedules = combineSchedules(combinedSchedules, schedules[i++]);
     }
 
-    // get latest login and earliest logout
     pair<string, string> logTimes = workingPeriods[0];
-    for (int i = 0; i < workingPeriods.size(); i++) {
-        if (toMinutes(workingPeriods[i].first) > toMinutes(logTimes.first)) {
-            logTimes.first = workingPeriods[i].first;
-        }
-        if (toMinutes(workingPeriods[i].second) < toMinutes(logTimes.second)) {
-            logTimes.second = workingPeriods[i].second;
-        }
+    for (const auto& period : workingPeriods) {
+        logTimes.first = max(logTimes.first, period.first);
+        logTimes.second = min(logTimes.second, period.second);
     }
 
-    // generate final schedule
     vector<pair<string, string>> finalSchedule;
-
-
-    // initialize iterator for inbetweens
-    i = 1;
-    pair<string, string> current;
-
-    // add valid inbetweens
-    while (i < combinedSchedules.size()) {
-        current = { combinedSchedules[i - 1].second, combinedSchedules[i].first };
-        if ((toMinutes(current.first) >= toMinutes(logTimes.first)) &&
-            (toMinutes(current.second) <= toMinutes(logTimes.second)) &&
-            (toMinutes(current.second) - toMinutes(current.first) >= duration)) {
+    for (size_t j = 1; j < combinedSchedules.size(); ++j) {
+        pair<string, string> current = { combinedSchedules[j - 1].second, combinedSchedules[j].first };
+        if (toMinutes(current.first) >= toMinutes(logTimes.first) &&
+            toMinutes(current.second) <= toMinutes(logTimes.second) &&
+            toMinutes(current.second) - toMinutes(current.first) >= duration) {
             finalSchedule.push_back(current);
         }
-        i++;
     }
-    // check final unavailable to logout
-    current = { combinedSchedules[i - 1].second, logTimes.second };
-    if ((toMinutes(current.second) <= toMinutes(logTimes.second)) &&
-        (toMinutes(current.second) - toMinutes(current.first) >= duration)) {
-        finalSchedule.push_back(current);
+
+    pair<string, string> lastPeriod = { combinedSchedules.back().second, logTimes.second };
+    if (toMinutes(lastPeriod.second) - toMinutes(lastPeriod.first) >= duration) {
+        finalSchedule.push_back(lastPeriod);
     }
 
     return finalSchedule;
 }
 
 int main() {
-    //// read and write files
-    //ifstream inputFile("input.txt");
-    //ofstream outputFile("output.txt");
+    ifstream inFile("input.txt");
+    ofstream outFile("output.txt");
 
-    //if (!inputFile.is_open() || !outputFile.is_open()) {
-    //    cerr << "Error: Unable to open input or output file.\n";
-    //}
+    if (!inFile.is_open()) {
+        cerr << "Error opening input file" << endl;
+        return 1;
+    }
+    if (!outFile.is_open()) {
+        cerr << "Error opening output file" << endl;
+        return 1;
+    }
 
-    //outputFile << "Available slots for the meeting:\n";
-    //inputFile.close();
-    //outputFile.close();
+    while (true) {
+        vector<vector<pair<string, string>>> schedules;
+        vector<pair<string, string>> workingPeriods;
 
-    // to be read from files
-    vector<vector<pair<string, string>>> schedules;
-    vector<pair<string, string>> workingPeriods;
+        int numSchedules;
+        if (!(inFile >> numSchedules)) break; // Exit loop if end of file is reached
 
+        // Read each person's schedule
+        for (int i = 0; i < numSchedules; ++i) {
+            int numEntries;
+            inFile >> numEntries;
 
-    // test values, to be read from input.txt
-    vector<pair<string, string>> p1sched;
-    p1sched.push_back({ "7:00", "8:30" });
-    // p1sched.push_back({ "12:00", "13:00" });
-    // p1sched.push_back({ "16:00", "18:00" });
+            vector<pair<string, string>> schedule;
+            for (int j = 0; j < numEntries; ++j) {
+                string start, end;
+                inFile >> start >> end;
+                schedule.push_back({start, end});
+            }
+            schedules.push_back(schedule);
+        }
 
-    workingPeriods.push_back({ "9:00", "19:00" });
+        int numPeriods;
+        inFile >> numPeriods;
 
-    vector<pair<string, string>> p2sched;
-    // p2sched.push_back({ "9:00", "10:30" });
-    // p2sched.push_back({ "12:20", "13:30" });
-    // p2sched.push_back({ "14:00", "15:00" });
-    // p2sched.push_back({ "16:00", "17:00" });
+        for (int i = 0; i < numPeriods; ++i) {
+            string start, end;
+            inFile >> start >> end;
+            workingPeriods.push_back({start, end});
+        }
 
-    schedules.push_back(p1sched);
-    schedules.push_back(p2sched);
+        int duration;
+        inFile >> duration;
 
-    workingPeriods.push_back({ "9:00", "18:30" });
+        // Generate the final schedule and output to file
+        vector<pair<string, string>> results = groupSchedule(schedules, workingPeriods, duration);
+        printSched(results, outFile);
+    }
 
-
-
-    // test combineSchedules
-    vector<pair<string, string>> results = groupSchedule(schedules, workingPeriods, 30);
-    printSched(results);
+    inFile.close();
+    outFile.close();
 
     return 0;
 }
