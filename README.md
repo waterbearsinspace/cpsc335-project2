@@ -8,7 +8,7 @@
 ## Input Format
 The input is written in the following format:
 
-number of group members
+number of group members 
 number of time entries for person1
 busy period interval separated by space
 ...
