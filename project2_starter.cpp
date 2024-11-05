@@ -21,7 +21,7 @@
 #include <vector>
 using namespace std;
 
-int convertToMinutes(string time) {
+int toMinutes(string time) {
     // "H:MM"
     if (time.size() == 4) {
         return (stoi(time.substr(0, 1)) * 60 + stoi(time.substr(2, 2)));
@@ -33,90 +33,113 @@ int convertToMinutes(string time) {
 }
 
 // assume both schedules are already sorted within themselves
-vector<pair<string, string>> combineSchedules(vector<pair<string, string>> person1Schedule, 
-    vector<pair<string, string>> person2Schedule) {
+vector<pair<string, string>> combineSchedules(vector<pair<string, string>> p1sched,
+    vector<pair<string, string>> p2sched) {
     // iterators through the two schedules
     int i = 0;
     int j = 0;
 
     // combined schedule
     vector<pair<string, string>> combined;
+    vector<pair<string, string>> merged;
 
     // add all in order
-    while ((i < person1Schedule.size()) && (j < person2Schedule.size())) {
+    while ((i < p1sched.size()) && (j < p2sched.size())) {
         // if the start of the first schedule is earlier than the start of the second, 
         // push the first schedule
-        if (convertToMinutes(person1Schedule[i].first) < 
-            convertToMinutes(person2Schedule[j].first)) {
-            combined.push_back(person1Schedule[i]);
+        if (toMinutes(p1sched[i].first) < toMinutes(p2sched[j].first)) {
+            combined.push_back(p1sched[i]);
             i++;
         }
 
         // otherwise
         else {
             // if they're the same start
-            if (convertToMinutes(person1Schedule[i].first) == 
-                convertToMinutes(person2Schedule[j].first)) {
+            if (toMinutes(p1sched[i].first) == toMinutes(p2sched[j].first)) {
                 // push the schedule with an earlier end
-                if (convertToMinutes(person1Schedule[i].second) < 
-                    convertToMinutes(person2Schedule[j].second)) {
-                    combined.push_back(person1Schedule[i]);
+                if (toMinutes(p1sched[i].second) <
+                    toMinutes(p2sched[j].second)) {
+                    combined.push_back(p1sched[i]);
                     i++;
                 }
                 else {
-                    combined.push_back(person2Schedule[j]);
+                    combined.push_back(p2sched[j]);
                     j++;
                 }
             }
             // otherwise push the second schedule
             else {
-                combined.push_back(person2Schedule[j]);
+                combined.push_back(p2sched[j]);
                 j++;
             }
         }
     }
 
     // add the rest
-    while (i < person1Schedule.size()) {
-        combined.push_back(person1Schedule[i]);
+    while (i < p1sched.size()) {
+        combined.push_back(p1sched[i]);
         i++;
     }
-    while (j < person2Schedule.size()) {
-
-        combined.push_back(person2Schedule[j]);
+    while (j < p2sched.size()) {
+        combined.push_back(p2sched[j]);
         j++;
     }
 
-    return combined;
+    // reset iterators
+    i = 0;
+    j = 1;
+    pair<string, string> current = combined[i];
+
+    // merge schedules
+    while ((i < combined.size()) && (j < combined.size())) {
+        if ((toMinutes(current.first) <= toMinutes(combined[j].first)) &&
+            (toMinutes(current.second) >= toMinutes(combined[j].first))) {
+            current.second =
+                (toMinutes(combined[i].second) > toMinutes(combined[j].second) ?
+                    combined[i].second : combined[j].second);
+            j++;
+            if (j >= combined.size()) {
+                merged.push_back(current);
+            }
+        }
+        else {
+            merged.push_back(current);
+            i = j;
+            current = combined[i];
+            j++;
+        }
+    }
+
+    return merged;
 }
 
 
 int main() {
-    // read and write files
-    ifstream inputFile("input.txt");
-    ofstream outputFile("output.txt");
+    //// read and write files
+    //ifstream inputFile("input.txt");
+    //ofstream outputFile("output.txt");
 
-    if (!inputFile.is_open() || !outputFile.is_open()) {
-        cerr << "Error: Unable to open input or output file.\n";
-    }
+    //if (!inputFile.is_open() || !outputFile.is_open()) {
+    //    cerr << "Error: Unable to open input or output file.\n";
+    //}
 
-    outputFile << "Available slots for the meeting:\n";
-    inputFile.close();
-    outputFile.close();
+    //outputFile << "Available slots for the meeting:\n";
+    //inputFile.close();
+    //outputFile.close();
 
     // test values, to be read from input.txt
-    vector<pair<string, string>> person1Schedule;
-    person1Schedule.push_back({ "7:00", "8:30" });
-    person1Schedule.push_back({ "12:00", "13:00" });
-    person1Schedule.push_back({ "16:00", "18:00" });
-    vector<pair<string, string>> person2Schedule;
-    person2Schedule.push_back({ "9:00", "10:30" });
-    person2Schedule.push_back({ "12:20", "13:30" });
-    person2Schedule.push_back({ "14:00", "15:00" });
-    person2Schedule.push_back({ "16:00", "17:00" });
+    vector<pair<string, string>> p1sched;
+    p1sched.push_back({ "7:00", "8:30" });
+    p1sched.push_back({ "12:00", "13:00" });
+    p1sched.push_back({ "16:00", "18:00" });
+    vector<pair<string, string>> p2sched;
+    p2sched.push_back({ "9:00", "10:30" });
+    p2sched.push_back({ "12:20", "13:30" });
+    p2sched.push_back({ "14:00", "15:00" });
+    p2sched.push_back({ "16:00", "17:00" });
 
     // test combineSchedules
-    vector<pair<string, string>> combined = combineSchedules(person1Schedule, person2Schedule);
+    vector<pair<string, string>> combined = combineSchedules(p1sched, p2sched);
     cout << endl;
     cout << "Combined Schedule:" << endl;
     for (int i = 0; i < combined.size(); i++) {
