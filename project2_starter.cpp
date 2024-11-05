@@ -21,6 +21,7 @@
 #include <vector>
 using namespace std;
 
+// convert "hh:mm" to minutes
 int toMinutes(string time) {
     // "H:MM"
     if (time.size() == 4) {
@@ -32,6 +33,7 @@ int toMinutes(string time) {
     }
 }
 
+// function to combine two schedules
 // assume both schedules are already sorted within themselves
 vector<pair<string, string>> combineSchedules(vector<pair<string, string>> p1sched,
     vector<pair<string, string>> p2sched) {
@@ -39,7 +41,8 @@ vector<pair<string, string>> combineSchedules(vector<pair<string, string>> p1sch
     int i = 0;
     int j = 0;
 
-    // combined schedule
+    // combined and merged schedules
+    // combine and sort both schedules then merge any overlaps
     vector<pair<string, string>> combined;
     vector<pair<string, string>> merged;
 
@@ -90,7 +93,7 @@ vector<pair<string, string>> combineSchedules(vector<pair<string, string>> p1sch
     j = 1;
     pair<string, string> current = combined[i];
 
-    // merge schedules
+    // merge overlapping schedules
     while ((i < combined.size()) && (j < combined.size())) {
         if ((toMinutes(current.first) <= toMinutes(combined[j].first)) &&
             (toMinutes(current.second) >= toMinutes(combined[j].first))) {
@@ -113,6 +116,60 @@ vector<pair<string, string>> combineSchedules(vector<pair<string, string>> p1sch
     return merged;
 }
 
+// the actual scheduling function
+vector<pair<string, string>> groupSchedule(vector<vector<pair<string,
+    string>>> schedules, vector<pair<string, string>> workingPeriods, int duration) {
+    // iterator
+    int i = 0;
+
+    // initialize first schedule
+    vector<pair<string, string>> combinedSchedules = schedules[i];
+    i++;
+
+    // combine all schedules
+    while (i < schedules.size()) {
+        combinedSchedules = combineSchedules(combinedSchedules, schedules[i]);
+        i++;
+    }
+
+    // get latest login and earliest logout
+    pair<string, string> logTimes = workingPeriods[0];
+    for (int i = 0; i < workingPeriods.size(); i++) {
+        if (toMinutes(workingPeriods[i].first) > toMinutes(logTimes.first)) {
+            logTimes.first = workingPeriods[i].first;
+        }
+        if (toMinutes(workingPeriods[i].second) < toMinutes(logTimes.second)) {
+            logTimes.second = workingPeriods[i].second;
+        }
+    }
+
+    // generate final schedule
+    vector<pair<string, string>> finalSchedule;
+
+
+    // initialize iterator for inbetweens
+    i = 1;
+    pair<string, string> current;
+
+    // add valid inbetweens
+    while (i < combinedSchedules.size()) {
+        current = { combinedSchedules[i - 1].second, combinedSchedules[i].first };
+        if ((toMinutes(current.first) >= toMinutes(logTimes.first)) &&
+            (toMinutes(current.second) <= toMinutes(logTimes.second)) &&
+            (toMinutes(current.second) - toMinutes(current.first) >= duration)) {
+            finalSchedule.push_back(current);
+        }
+        i++;
+    }
+    // check final unavailable to logout
+    current = { combinedSchedules[i - 1].second, logTimes.second };
+    if ((toMinutes(current.second) <= toMinutes(logTimes.second)) &&
+        (toMinutes(current.second) - toMinutes(current.first) >= duration)) {
+        finalSchedule.push_back(current);
+    }
+
+    return finalSchedule;
+}
 
 int main() {
     //// read and write files
@@ -127,23 +184,36 @@ int main() {
     //inputFile.close();
     //outputFile.close();
 
+    // to be read from files
+    vector<vector<pair<string, string>>> schedules;
+    vector<pair<string, string>> workingPeriods;
+
+
     // test values, to be read from input.txt
     vector<pair<string, string>> p1sched;
     p1sched.push_back({ "7:00", "8:30" });
     p1sched.push_back({ "12:00", "13:00" });
     p1sched.push_back({ "16:00", "18:00" });
+
+    workingPeriods.push_back({ "9:00", "19:00" });
+
     vector<pair<string, string>> p2sched;
     p2sched.push_back({ "9:00", "10:30" });
     p2sched.push_back({ "12:20", "13:30" });
     p2sched.push_back({ "14:00", "15:00" });
     p2sched.push_back({ "16:00", "17:00" });
 
+    schedules.push_back(p1sched);
+    schedules.push_back(p2sched);
+
+    workingPeriods.push_back({ "9:00", "18:30" });
+
+
+
     // test combineSchedules
-    vector<pair<string, string>> combined = combineSchedules(p1sched, p2sched);
-    cout << endl;
-    cout << "Combined Schedule:" << endl;
-    for (int i = 0; i < combined.size(); i++) {
-        cout << combined[i].first << " " << combined[i].second << endl;
+    vector<pair<string, string>> results = groupSchedule(schedules, workingPeriods, 30);
+    for (int i = 0; i < results.size(); i++) {
+        cout << results[i].first << " " << results[i].second << endl;
     }
 
     return 0;
