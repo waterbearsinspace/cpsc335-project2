@@ -9,16 +9,27 @@
 The input is written in the following format:
 
 number of group members 
+
 number of time entries for person1
+
 busy period interval separated by space
+
 ...
+
 number of time entries for person2
+
 busy period interval separated by space
+
 ...
+
 number of group members
+
 person1 active period interval separated by space
+
 person2 active period interval separated by space
+
 ...
+
 duration in minutes
 
 each test case is separated by newline
