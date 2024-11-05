@@ -33,6 +33,13 @@ int toMinutes(string time) {
     }
 }
 
+// print a schedule
+void printSched(vector<pair<string, string>> sched) {
+    for (int i = 0; i < sched.size(); i++) {
+        cout << sched[i].first << " " << sched[i].second << endl;;
+    }
+}
+
 // function to combine two schedules
 // assume both schedules are already sorted within themselves
 vector<pair<string, string>> combineSchedules(vector<pair<string, string>> p1sched,
@@ -111,6 +118,11 @@ vector<pair<string, string>> combineSchedules(vector<pair<string, string>> p1sch
             current = combined[i];
             j++;
         }
+    }
+    while (i < combined.size()) {
+        current = combined[i];
+        merged.push_back(current);
+        i++;
     }
 
     return merged;
@@ -192,16 +204,16 @@ int main() {
     // test values, to be read from input.txt
     vector<pair<string, string>> p1sched;
     p1sched.push_back({ "7:00", "8:30" });
-    p1sched.push_back({ "12:00", "13:00" });
-    p1sched.push_back({ "16:00", "18:00" });
+    // p1sched.push_back({ "12:00", "13:00" });
+    // p1sched.push_back({ "16:00", "18:00" });
 
     workingPeriods.push_back({ "9:00", "19:00" });
 
     vector<pair<string, string>> p2sched;
-    p2sched.push_back({ "9:00", "10:30" });
-    p2sched.push_back({ "12:20", "13:30" });
-    p2sched.push_back({ "14:00", "15:00" });
-    p2sched.push_back({ "16:00", "17:00" });
+    // p2sched.push_back({ "9:00", "10:30" });
+    // p2sched.push_back({ "12:20", "13:30" });
+    // p2sched.push_back({ "14:00", "15:00" });
+    // p2sched.push_back({ "16:00", "17:00" });
 
     schedules.push_back(p1sched);
     schedules.push_back(p2sched);
@@ -212,9 +224,7 @@ int main() {
 
     // test combineSchedules
     vector<pair<string, string>> results = groupSchedule(schedules, workingPeriods, 30);
-    for (int i = 0; i < results.size(); i++) {
-        cout << results[i].first << " " << results[i].second << endl;
-    }
+    printSched(results);
 
     return 0;
 }
