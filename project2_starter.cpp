@@ -5,13 +5,13 @@
 //      Nick Viste
 // Date: 11/06/2024
 // Project: Matching Group Schedules
-// Purpose: This program takes the schedule (an array list) of two or more 
-//  group members, an array of two entries that represent the daily working 
-//  periods for each group member and an integer representing the miniumum
+// Purpose: This program takes the schedule (as a vector) of two or more 
+//  group members, a vector of two entries that represent the daily working 
+//  periods for each group member, and an integer representing the miniumum
 //  duration of the meeting required.
 //
-//  The goal is to find a time slot when all group members are free for a 
-//  meeting, considering the provided schedules and the minimum duration 
+//  The goal is to find any time slots where all group members are free for 
+//  a meeting, considering the provided schedules and the minimum duration 
 //  required for the meeting.
 // =============================================================================
 #include <fstream>
@@ -20,56 +20,74 @@
 #include <vector>
 using namespace std;
 
-// Convert "hh:mm" to minutes
+// Convert "HH:MM" to minutes
 int toMinutes(string time) {
-    if (time.size() == 4) { // "H:MM"
+    // "H:MM"
+    if (time.size() == 4) {
         return stoi(time.substr(0, 1)) * 60 + stoi(time.substr(2, 2));
     }
-    else { // "HH:MM"
+    // "HH:MM"
+    else {
         return stoi(time.substr(0, 2)) * 60 + stoi(time.substr(3, 2));
     }
 }
 
-// Print a schedule to an output file
-void printSched(const vector<pair<string, string>>& sched, ofstream& outFile) {
-        outFile << "Availability: \n";
-    for (const auto& period : sched) {
+// Add a schedule to an output file
+void outputSchedule(const vector<pair<string, string>>& sched, ofstream& outFile) {
+    // Add all periods of availability
+    outFile << "Availability: \n";
+    for (const pair<string, string>& period : sched) {
         outFile << period.first << " " << period.second << endl;
     }
-    outFile << endl; // Separate test cases with a blank line
+    // Separate test cases with a blank line
+    outFile << endl;
 }
 
 // Function to combine two schedules
 vector<pair<string, string>> combineSchedules(const vector<pair<string, string>>& p1sched,
     const vector<pair<string, string>>& p2sched) {
+    // Initialize iterators
     size_t i = 0, j = 0;
+    // Initialize vectors of the two input schedules combined and sorted
+    // and of this result with any overlapping schedules merged
     vector<pair<string, string>> combined, merged;
 
     // Combine the schedules in sorted order
     while (i < p1sched.size() && j < p2sched.size()) {
+        // Push the first schedule if it begins before the second
         if (toMinutes(p1sched[i].first) < toMinutes(p2sched[j].first)) {
             combined.push_back(p1sched[i++]);
-        } else if (toMinutes(p1sched[i].first) == toMinutes(p2sched[j].first)) {
+        }
+        // Otherwise combine the two schedules if they start at the same time
+        else if (toMinutes(p1sched[i].first) == toMinutes(p2sched[j].first)) {
             combined.push_back(toMinutes(p1sched[i].second) < toMinutes(p2sched[j].second) ? p1sched[i++] : p2sched[j++]);
-        } else {
+        }
+        // Otherwise push the second schedule
+        else {
             combined.push_back(p2sched[j++]);
         }
     }
 
-    // Add remaining entries
+    // Add remaining entries from each schedule
     while (i < p1sched.size()) combined.push_back(p1sched[i++]);
     while (j < p2sched.size()) combined.push_back(p2sched[j++]);
 
-    // Merge overlapping schedules
+    // Merge overlapping schedules in the combined schedule
+    // Initialize the current schedule as the first in the combined vector
     pair<string, string> current = combined[0];
     for (size_t k = 1; k < combined.size(); ++k) {
+        // If the current schedule starts after the next schedule begins
+        // set the current schedule to end at the later end time of the two
         if (toMinutes(current.second) >= toMinutes(combined[k].first)) {
             current.second = max(current.second, combined[k].second);
-        } else {
+        }
+        // Otherwise push the current schedule and set the current schedule to the next schedule
+        else {
             merged.push_back(current);
             current = combined[k];
         }
     }
+    // Push the final current schedule
     merged.push_back(current);
 
     return merged;
@@ -78,21 +96,31 @@ vector<pair<string, string>> combineSchedules(const vector<pair<string, string>>
 // Main scheduling function
 vector<pair<string, string>> groupSchedule(const vector<vector<pair<string, string>>>& schedules,
     const vector<pair<string, string>>& workingPeriods, int duration) {
+    // Initialize iterator
     size_t i = 0;
+
+    // Initialize the total combined schedules as the first schedule and increase iterator
     vector<pair<string, string>> combinedSchedules = schedules[i++];
 
+    // Combine the current total combined schedules with the next schedule
     while (i < schedules.size()) {
         combinedSchedules = combineSchedules(combinedSchedules, schedules[i++]);
     }
 
+    // Initialize working period as the first working period
     pair<string, string> logTimes = workingPeriods[0];
-    for (const auto& period : workingPeriods) {
+
+    // Of the working periods, set the logTimes as the latest login and earliest logout
+    for (const pair<string, string>& period : workingPeriods) {
         logTimes.first = max(logTimes.first, period.first);
         logTimes.second = min(logTimes.second, period.second);
     }
 
+    // Create the final schedule of availabilities from periods between busy schedules
     vector<pair<string, string>> finalSchedule;
     for (size_t j = 1; j < combinedSchedules.size(); ++j) {
+        // If the period between unavailable schedules is within the log times 
+        // and is of valid duration, push it as a period of availability
         pair<string, string> current = { combinedSchedules[j - 1].second, combinedSchedules[j].first };
         if (toMinutes(current.first) >= toMinutes(logTimes.first) &&
             toMinutes(current.second) <= toMinutes(logTimes.second) &&
@@ -101,6 +129,8 @@ vector<pair<string, string>> groupSchedule(const vector<vector<pair<string, stri
         }
     }
 
+    // Create a period from the last busy schedule to the logout time
+    // and push if it is valid
     pair<string, string> lastPeriod = { combinedSchedules.back().second, logTimes.second };
     if (toMinutes(lastPeriod.second) - toMinutes(lastPeriod.first) >= duration) {
         finalSchedule.push_back(lastPeriod);
@@ -110,9 +140,11 @@ vector<pair<string, string>> groupSchedule(const vector<vector<pair<string, stri
 }
 
 int main() {
+    // Initialize input and output streams
     ifstream inFile("input.txt");
     ofstream outFile("output.txt");
 
+    // Return errors if unable to properly read/write files
     if (!inFile.is_open()) {
         cerr << "Error opening input file" << endl;
         return 1;
@@ -122,44 +154,56 @@ int main() {
         return 1;
     }
 
+    // Go through each test case and provide availabilities
     while (true) {
+        // Initialize all schedules and workingPeriods, to be read from input
         vector<vector<pair<string, string>>> schedules;
         vector<pair<string, string>> workingPeriods;
 
+        // Take in the number of schedules for this case,
+        // exiting if no more cases are found
         int numSchedules;
-        if (!(inFile >> numSchedules)) break; // Exit loop if end of file is reached
+        if (!(inFile >> numSchedules)) break;
 
         // Read each person's schedule
         for (int i = 0; i < numSchedules; ++i) {
+            // Read number of busy schedule entries for current person
             int numEntries;
             inFile >> numEntries;
 
+            // Read each schedule for the current person
             vector<pair<string, string>> schedule;
             for (int j = 0; j < numEntries; ++j) {
                 string start, end;
                 inFile >> start >> end;
-                schedule.push_back({start, end});
+                schedule.push_back({ start, end });
             }
+
+            // Push the current person's schedule to the vector of all schedules
             schedules.push_back(schedule);
         }
 
+        // Take in the number of working periods for this case
         int numPeriods;
         inFile >> numPeriods;
 
+        // Read each working period and push to the vector of all working periods
         for (int i = 0; i < numPeriods; ++i) {
             string start, end;
             inFile >> start >> end;
-            workingPeriods.push_back({start, end});
+            workingPeriods.push_back({ start, end });
         }
 
+        // Read the desired minimum duration for meetings
         int duration;
         inFile >> duration;
 
         // Generate the final schedule and output to file
         vector<pair<string, string>> results = groupSchedule(schedules, workingPeriods, duration);
-        printSched(results, outFile);
+        outputSchedule(results, outFile);
     }
 
+    // Close input and output streams
     inFile.close();
     outFile.close();
 
