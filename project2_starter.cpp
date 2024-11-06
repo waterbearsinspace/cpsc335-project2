@@ -44,8 +44,8 @@ void outputSchedule(const vector<pair<string, string>>& sched, ofstream& outFile
 }
 
 // Function to combine two schedules
-vector<pair<string, string>> combineSchedules(const vector<pair<string, string>>& p1sched,
-    const vector<pair<string, string>>& p2sched) {
+vector<pair<string, string>> combineSchedules(
+    const vector<pair<string, string>>& p1sched, const vector<pair<string, string>>& p2sched) {
     // Initialize iterators
     size_t i = 0, j = 0;
     // Initialize vectors of the two input schedules combined and sorted
@@ -60,7 +60,9 @@ vector<pair<string, string>> combineSchedules(const vector<pair<string, string>>
         }
         // Otherwise combine the two schedules if they start at the same time
         else if (toMinutes(p1sched[i].first) == toMinutes(p2sched[j].first)) {
-            combined.push_back(toMinutes(p1sched[i].second) < toMinutes(p2sched[j].second) ? p1sched[i++] : p2sched[j++]);
+            pair<string, string> sameStart = { p1sched[i].first, (toMinutes(p1sched[i].second) < toMinutes(p2sched[j].second) ?
+                p1sched[i++].second : p2sched[j++].second) };
+            combined.push_back(sameStart);
         }
         // Otherwise push the second schedule
         else {
@@ -79,7 +81,8 @@ vector<pair<string, string>> combineSchedules(const vector<pair<string, string>>
         // If the current schedule starts after the next schedule begins
         // set the current schedule to end at the later end time of the two
         if (toMinutes(current.second) >= toMinutes(combined[k].first)) {
-            current.second = max(current.second, combined[k].second);
+            current.second = (toMinutes(current.second) > toMinutes(combined[k].second) ?
+                current.second : combined[k].second);
         }
         // Otherwise push the current schedule and set the current schedule to the next schedule
         else {
@@ -102,18 +105,20 @@ vector<pair<string, string>> groupSchedule(const vector<vector<pair<string, stri
     // Initialize the total combined schedules as the first schedule and increase iterator
     vector<pair<string, string>> combinedSchedules = schedules[i++];
 
-    // Combine the current total combined schedules with the next schedule
-    while (i < schedules.size()) {
-        combinedSchedules = combineSchedules(combinedSchedules, schedules[i++]);
-    }
-
     // Initialize working period as the first working period
     pair<string, string> logTimes = workingPeriods[0];
 
     // Of the working periods, set the logTimes as the latest login and earliest logout
     for (const pair<string, string>& period : workingPeriods) {
-        logTimes.first = max(logTimes.first, period.first);
-        logTimes.second = min(logTimes.second, period.second);
+        logTimes.first = (toMinutes(logTimes.first) > toMinutes(period.first) ?
+            logTimes.first : period.first);
+        logTimes.second = (toMinutes(logTimes.second) < toMinutes(period.second) ?
+            logTimes.second : period.second);
+    }
+
+    // Combine the current total combined schedules with the next schedule
+    while (i < schedules.size()) {
+        combinedSchedules = combineSchedules(combinedSchedules, schedules[i++]);
     }
 
     // Create the final schedule of availabilities from periods between busy schedules
@@ -122,9 +127,7 @@ vector<pair<string, string>> groupSchedule(const vector<vector<pair<string, stri
         // If the period between unavailable schedules is within the log times 
         // and is of valid duration, push it as a period of availability
         pair<string, string> current = { combinedSchedules[j - 1].second, combinedSchedules[j].first };
-        if (toMinutes(current.first) >= toMinutes(logTimes.first) &&
-            toMinutes(current.second) <= toMinutes(logTimes.second) &&
-            toMinutes(current.second) - toMinutes(current.first) >= duration) {
+        if (toMinutes(current.second) - toMinutes(current.first) >= duration) {
             finalSchedule.push_back(current);
         }
     }
