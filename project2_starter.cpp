@@ -127,7 +127,9 @@ vector<pair<string, string>> groupSchedule(const vector<vector<pair<string, stri
         // If the period between unavailable schedules is within the log times 
         // and is of valid duration, push it as a period of availability
         pair<string, string> current = { combinedSchedules[j - 1].second, combinedSchedules[j].first };
-        if (toMinutes(current.second) - toMinutes(current.first) >= duration) {
+        if (toMinutes(current.first) >= toMinutes(logTimes.first) &&
+            toMinutes(current.second) <= toMinutes(logTimes.second) &&
+            toMinutes(current.second) - toMinutes(current.first) >= duration) {
             finalSchedule.push_back(current);
         }
     }
