@@ -121,8 +121,16 @@ vector<pair<string, string>> groupSchedule(const vector<vector<pair<string, stri
         combinedSchedules = combineSchedules(combinedSchedules, schedules[i++]);
     }
 
-    // Create the final schedule of availabilities from periods between busy schedules
+    // Initialize final schedule of availabile periods
     vector<pair<string, string>> finalSchedule;
+
+    // Create a period from login time to first busy schedule
+    // and push if it is valid
+    pair<string, string> firstPeriod = { logTimes.first, combinedSchedules.front().first };
+    if (toMinutes(firstPeriod.second) - toMinutes(firstPeriod.first) >= duration) {
+        finalSchedule.push_back(firstPeriod);
+    }
+
     for (size_t j = 1; j < combinedSchedules.size(); ++j) {
         // If the period between unavailable schedules is within the log times 
         // and is of valid duration, push it as a period of availability
