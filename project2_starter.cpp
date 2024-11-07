@@ -32,6 +32,14 @@ int toMinutes(string time) {
     }
 }
 
+// Print vector to console for testing purposes
+void printVect(const vector<pair<string, string>>& toPrint, string phrase) {
+    cout << "START " << phrase << endl;
+    for (int i = 0; i < toPrint.size(); i++) {
+        cout << toPrint[i].first << " " << toPrint[i].second << endl;
+    }
+}
+
 // Add a schedule to an output file
 void outputSchedule(const vector<pair<string, string>>& sched, ofstream& outFile) {
     // Add all periods of availability
@@ -60,19 +68,21 @@ vector<pair<string, string>> combineSchedules(
         }
         // Otherwise combine the two schedules if they start at the same time
         else if (toMinutes(p1sched[i].first) == toMinutes(p2sched[j].first)) {
-            pair<string, string> sameStart = { p1sched[i].first, (toMinutes(p1sched[i].second) < toMinutes(p2sched[j].second) ?
-                p1sched[i++].second : p2sched[j++].second) };
+            pair<string, string> sameStart = { p1sched[i].first, (toMinutes(p1sched[i].second) > toMinutes(p2sched[j].second) ?
+                p1sched[i].second : p2sched[j].second) };
             combined.push_back(sameStart);
+            i++;
+            j++;
         }
         // Otherwise push the second schedule
         else {
             combined.push_back(p2sched[j++]);
         }
-    }
 
-    // Add remaining entries from each schedule
-    while (i < p1sched.size()) combined.push_back(p1sched[i++]);
-    while (j < p2sched.size()) combined.push_back(p2sched[j++]);
+        // Add remaining entries from each schedule
+        while (i < p1sched.size()) combined.push_back(p1sched[i++]);
+        while (j < p2sched.size()) combined.push_back(p2sched[j++]);
+    }
 
     // Merge overlapping schedules in the combined schedule
     // Initialize the current schedule as the first in the combined vector
@@ -102,8 +112,11 @@ vector<pair<string, string>> groupSchedule(const vector<vector<pair<string, stri
     // Initialize iterator
     size_t i = 0;
 
-    // Initialize the total combined schedules as the first schedule and increase iterator
-    vector<pair<string, string>> combinedSchedules = schedules[i++];
+    // Initialize the total combined schedules as empty if no schedules are found and return this
+    // or as the first schedule and if so, increase iterator
+    vector<pair<string, string>> combinedSchedules;
+    if (schedules.size() == 0) return { {} };
+    else combinedSchedules = schedules[i++];
 
     // Initialize working period as the first working period
     pair<string, string> logTimes = workingPeriods[0];
@@ -120,6 +133,7 @@ vector<pair<string, string>> groupSchedule(const vector<vector<pair<string, stri
     while (i < schedules.size()) {
         combinedSchedules = combineSchedules(combinedSchedules, schedules[i++]);
     }
+
 
     // Initialize final schedule of availabile periods
     vector<pair<string, string>> finalSchedule;
