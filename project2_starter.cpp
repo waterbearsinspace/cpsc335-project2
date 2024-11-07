@@ -35,7 +35,7 @@ int toMinutes(string time) {
 // Print vector to console for testing purposes
 void printVect(const vector<pair<string, string>>& toPrint, string phrase) {
     cout << "START " << phrase << endl;
-    for (int i = 0; i < toPrint.size(); i++) {
+    for (size_t i = 0; i < toPrint.size(); i++) {
         cout << toPrint[i].first << " " << toPrint[i].second << endl;
     }
 }
