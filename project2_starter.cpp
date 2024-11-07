@@ -56,6 +56,15 @@ vector<pair<string, string>> combineSchedules(
     const vector<pair<string, string>>& p1sched, const vector<pair<string, string>>& p2sched) {
     // Initialize iterators
     size_t i = 0, j = 0;
+
+    // Handle empty schedules
+    if (p1sched.empty() || p2sched.empty()) {
+        if (p1sched.empty() && p2sched.empty()) {
+            return { {} };
+        }
+        else return (p1sched.empty() ? p2sched : p1sched);
+    }
+
     // Initialize vectors of the two input schedules combined and sorted
     // and of this result with any overlapping schedules merged
     vector<pair<string, string>> combined, merged;
@@ -109,14 +118,20 @@ vector<pair<string, string>> combineSchedules(
 // Main scheduling function
 vector<pair<string, string>> groupSchedule(const vector<vector<pair<string, string>>>& schedules,
     const vector<pair<string, string>>& workingPeriods, int duration) {
+
     // Initialize iterator
     size_t i = 0;
 
     // Initialize the total combined schedules as empty if no schedules are found and return this
     // or as the first schedule and if so, increase iterator
     vector<pair<string, string>> combinedSchedules;
-    if (schedules.size() == 0) return { {} };
-    else combinedSchedules = schedules[i++];
+    combinedSchedules = schedules[i++];
+
+
+    // Combine the current total combined schedules with the next schedule
+    while (i < schedules.size()) {
+        combinedSchedules = combineSchedules(combinedSchedules, schedules[i++]);
+    }
 
     // Initialize working period as the first working period
     pair<string, string> logTimes = workingPeriods[0];
@@ -129,14 +144,14 @@ vector<pair<string, string>> groupSchedule(const vector<vector<pair<string, stri
             logTimes.second : period.second);
     }
 
-    // Combine the current total combined schedules with the next schedule
-    while (i < schedules.size()) {
-        combinedSchedules = combineSchedules(combinedSchedules, schedules[i++]);
-    }
-
-
     // Initialize final schedule of availabile periods
     vector<pair<string, string>> finalSchedule;
+
+    // Handle empty schedules
+    if (combinedSchedules[0].first == "") {
+        finalSchedule.push_back({ logTimes.first, logTimes.second });
+        return finalSchedule;
+    }
 
     // Create a period from login time to first busy schedule
     // and push if it is valid
@@ -197,13 +212,15 @@ int main() {
             // Read number of busy schedule entries for current person
             int numEntries;
             inFile >> numEntries;
+            vector<pair<string, string>> schedule;
 
             // Read each schedule for the current person
-            vector<pair<string, string>> schedule;
-            for (int j = 0; j < numEntries; ++j) {
-                string start, end;
-                inFile >> start >> end;
-                schedule.push_back({ start, end });
+            if (numEntries != 0) {
+                for (int j = 0; j < numEntries; ++j) {
+                    string start, end;
+                    inFile >> start >> end;
+                    schedule.push_back({ start, end });
+                }
             }
 
             // Push the current person's schedule to the vector of all schedules
