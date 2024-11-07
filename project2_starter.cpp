@@ -78,11 +78,11 @@ vector<pair<string, string>> combineSchedules(
         else {
             combined.push_back(p2sched[j++]);
         }
-
-        // Add remaining entries from each schedule
-        while (i < p1sched.size()) combined.push_back(p1sched[i++]);
-        while (j < p2sched.size()) combined.push_back(p2sched[j++]);
     }
+
+    // Add remaining entries from each schedule
+    while (i < p1sched.size()) combined.push_back(p1sched[i++]);
+    while (j < p2sched.size()) combined.push_back(p2sched[j++]);
 
     // Merge overlapping schedules in the combined schedule
     // Initialize the current schedule as the first in the combined vector
