@@ -2,7 +2,7 @@
 
 ## Members
 - Noemi Pantoja Morales: noemi_900@csu.fullerton.edu
-- Andreia Shin: [add email here]
+- Andreia Shin: deiaashin@csu.fullerton.edu
 - Nick Viste : nviste@csu.fullerton.edu
 
 ## Input Format
